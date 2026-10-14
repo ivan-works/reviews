@@ -43,6 +43,34 @@ main{max-width:980px;margin:0 auto;padding:20px 16px 48px}h1{font-size:22px;marg
 #tr-summary{display:none!important}
 @media(hover:none){.tr-chart .tr-tooltip{pointer-events:auto}}
  .tr-chart .tr-tooltip .tr-tip-value{display:flex;gap:18px;align-items:baseline;justify-content:space-between;white-space:nowrap;margin-top:3px}.tr-chart .tr-tooltip .tr-tip-value span{padding-left:7px;color:var(--mu)}.tr-chart .tr-tooltip .tr-tip-value strong{font-weight:650;font-variant-numeric:tabular-nums}.tr-chart .tr-tooltip{min-width:175px;max-width:min(330px,calc(100% - 16px))}.tr-chart .tr-tooltip>div:not(.tr-tip-value){margin-top:6px;font-size:11px;color:var(--mu)}
+
+/* Mobile-only layout refinement: two aligned rows, no overlapping date inputs. */
+@media (max-width: 620px) {
+  .tr-modes { grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+  .tr-modes button { min-width:0; padding:9px 5px; line-height:1.35; }
+  .tr-modes button.on { padding:8px 4px; }
+  .tr-modes button small { font-size:10px; margin-top:2px; }
+  .tr-unified-controls { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px 9px; align-items:stretch; }
+  .tr-unified-controls label { flex:none; min-width:0; width:100%; margin:0; display:flex; flex-direction:column; }
+  .tr-unified-controls label:nth-of-type(1) { grid-column:1; grid-row:1; }
+  .tr-unified-controls label:nth-of-type(4) { grid-column:2; grid-row:1; }
+  .tr-unified-controls label:nth-of-type(2) { grid-column:1; grid-row:2; }
+  .tr-unified-controls label:nth-of-type(3) { grid-column:2; grid-row:2; }
+  .tr-unified-controls select, .tr-unified-controls input[type=date] {
+    display:block; width:100%; min-width:0; max-width:100%; height:40px;
+    box-sizing:border-box; font-size:13px; padding:6px 7px;
+  }
+  .tr-unified-controls button#tr-reset { grid-column:1/-1; grid-row:3; width:100%; height:39px; margin:0; }
+  .tr-facts { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .tr-facts > div:first-child { grid-column:1/-1; }
+  .tr-facts span { display:block; overflow-wrap:normal; word-break:normal; }
+  .tr-facts b { font-size:19px; white-space:nowrap; }
+  .tr-chart svg { max-width:100%; }
+}
+@media (max-width:360px) {
+ .tr-unified-controls select,.tr-unified-controls input[type=date]{font-size:12px;padding-left:4px;padding-right:4px}
+ .tr-facts b{font-size:17px}
+}
 </style></head><body><div id="login"><div class="lg"><div class="logo lgo" role="img" aria-label="長安醫院"></div><h2>長安醫院評論分析</h2><p class="note">內部資料,請登入</p><input id="lu" placeholder="帳號" autocomplete="username"><input id="lp" type="password" placeholder="密碼" autocomplete="current-password"><button id="lb" type="button">登入</button><p id="lm" class="note"></p></div></div><div id="app" hidden><main>
 <button id="out" type="button" style="float:right;font:inherit;font-size:13px;padding:4px 12px;border:1px solid var(--ln);border-radius:8px;background:var(--card);color:var(--tx);cursor:pointer">登出</button><h1><span class="logo hl" role="img" aria-label="長安醫院"></span>長安醫院 Google 評論分析</h1><div class="sub" id="sub"></div>
 <nav id="nav"></nav><section data-p="home"><p class="note">💡 點選星等、年份、主題、單位、醫師,可直接查看對應的評論</p><div class="kpi" id="kpi"></div><div style="height:14px"></div>
