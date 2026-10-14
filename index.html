@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8"><title>長安醫院 Google 評論分析</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>
-:root{--bg:#f6f7f9;--card:#fff;--tx:#1d2733;--mu:#667085;--ln:#e4e7ec;--ac:#0f766e;--bad:#c2410c;--good:#15803d;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1d2733;--mu:#667085;--ln:#e4e7ec;--ac:#0f766e;--bad:#c2410c;--good:#5bd64b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12161c;--card:#1b222b;--tx:#e6eaf0;--mu:#98a2b3;--ln:#2c3642;--ac:#2dd4bf;--bad:#fb923c;--good:#4ade80}}
 :root[data-theme="dark"]{--bg:#12161c;--card:#1b222b;--tx:#e6eaf0;--mu:#98a2b3;--ln:#2c3642;--ac:#2dd4bf;--bad:#fb923c;--good:#4ade80}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}*{box-sizing:border-box}
@@ -296,9 +296,9 @@ if(f){d.onclick=f;d.className="lk"}d.append(el("b",a),el("span",b));$("kpi").app
          line(pre+'總評論數',x.n+' 則','#90b7cd');
        }
      }else if(state.mode==='structure'){
-       line(pre+'1～2 星',fm(x.bad/x.n*100)+'%','#d66b52');
+       line(pre+'1～2 星',fm(x.bad/x.n*100)+'%','#c2410c');
        line(pre+'3 星',fm(x.c[2]/x.n*100)+'%','#a3a3a3');
-       line(pre+'4～5 星',fm((x.c[3]+x.c[4])/x.n*100)+'%','#15803d');
+       line(pre+'4～5 星',fm((x.c[3]+x.c[4])/x.n*100)+'%','#5bd64b');
      }else{
        line(pre+'平均星等',fm(x.avg)+' ★','#0f766e');
        line(pre+'總評論數',x.n+' 則','#80b8dd');
@@ -403,7 +403,7 @@ if(f){d.onclick=f;d.className="lk"}d.append(el("b",a),el("span",b));$("kpi").app
    if(state.negativeView==='ratio'){specs=[{label:'負評佔比',color:'#c2410c',type:'line',value:r=>r.ratio}];high=100;percent=true}
    else specs=[{label:'全部評論數',color:'#90b7cd',type:'bar',value:r=>r.n},{label:'負評數',color:'#c2410c',type:'bar',value:r=>r.bad}];
   }else if(state.mode==='structure'){
-   specs=[{label:'1～2 星',color:'#d66b52',value:r=>r.n?r.bad/r.n*100:0},{label:'3 星',color:'#a3a3a3',value:r=>r.n?r.c[2]/r.n*100:0},{label:'4～5 星',color:'#15803d',value:r=>r.n?(r.c[3]+r.c[4])/r.n*100:0}];high=100;percent=true;stack=true;
+   specs=[{label:'1～2 星',color:'#c2410c',value:r=>r.n?r.bad/r.n*100:0},{label:'3 星',color:'#a3a3a3',value:r=>r.n?r.c[2]/r.n*100:0},{label:'4～5 星',color:'#5bd64b',value:r=>r.n?(r.c[3]+r.c[4])/r.n*100:0}];high=100;percent=true;stack=true;
   }else{ // 星等與評論量：單張雙 Y 軸組合圖
   }
   const compareReady=wantCompare&&P.n>0;
@@ -433,7 +433,7 @@ if(f){d.onclick=f;d.className="lk"}d.append(el("b",a),el("span",b));$("kpi").app
    }
   }else if(state.mode==='structure'){
    const share=(r,index)=>{if(!r||!r.n)return NaN;return index===0?r.bad/r.n*100:index===1?r.c[2]/r.n*100:(r.c[3]+r.c[4])/r.n*100};
-   const colors=['#d66b52','#a3a3a3','#15803d'];const names=['1～2 星','3 星','4～5 星'];
+   const colors=['#c2410c','#a3a3a3','#5bd64b'];const names=['1～2 星','3 星','4～5 星'];
    specs=names.map((name,i)=>({label:`本期 ${name}`,color:colors[i],group:'cur',value:r=>share(current(r),i)}));
    if(compareReady)specs.push(...names.map((name,i)=>({label:`${periodTag} ${name}`,color:colors[i],group:'old',value:r=>share(old(r),i)})));
    chart(c,shown,specs,{low:0,high:100,percent:true,stack:!compareReady,groupStack:compareReady,height:280});
