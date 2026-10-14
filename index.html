@@ -41,7 +41,7 @@ main{max-width:980px;margin:0 auto;padding:20px 16px 48px}h1{font-size:22px;marg
 .tr-chart .tr-tooltip .tr-tip-warn{display:block;color:var(--bad);font-size:11px;margin-top:4px}
 .tr-chart .tr-tooltip button{font:inherit;border:1px solid var(--ac);border-radius:6px;background:var(--card);color:var(--ac);margin-top:5px;padding:5px 9px;pointer-events:auto}
 #tr-summary{display:none!important}
-@media(hover:none){.tr-chart .tr-tooltip{pointer-events:auto}}
+@media(hover:none){.tr-chart .tr-tooltip{pointer-events:auto;max-width:calc(100% - 16px)}.tr-chart .tr-tooltip .tr-tip-open{display:block;width:100%;margin-top:8px}}
  .tr-chart .tr-tooltip .tr-tip-value{display:flex;gap:18px;align-items:baseline;justify-content:space-between;white-space:nowrap;margin-top:3px}.tr-chart .tr-tooltip .tr-tip-value span{padding-left:7px;color:var(--mu)}.tr-chart .tr-tooltip .tr-tip-value strong{font-weight:650;font-variant-numeric:tabular-nums}.tr-chart .tr-tooltip{min-width:175px;max-width:min(330px,calc(100% - 16px))}.tr-chart .tr-tooltip>div:not(.tr-tip-value){margin-top:6px;font-size:11px;color:var(--mu)}
 
 /* Mobile-only layout refinement: two aligned rows, no overlapping date inputs. */
@@ -210,9 +210,9 @@ if(f){d.onclick=f;d.className="lk"}d.append(el("b",a),el("span",b));$("kpi").app
   let active=-1;
   function indexAt(e){const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const matrix=svg.getScreenCTM();if(!matrix)return -1;const loc=pt.matrixTransform(matrix.inverse());return Math.min(arr.length-1,Math.max(0,Math.floor((loc.x-pad.l)/w*arr.length)))}
   function setActive(i,e){if(i<0)return;active=i;marker.setAttribute('x1',X(i));marker.setAttribute('x2',X(i));marker.setAttribute('visibility','visible');hover(arr[i],e)}
-  hit.addEventListener('pointermove',e=>{const i=indexAt(e);if(i!==active)setActive(i,e);else positionTip(e)});
-  hit.addEventListener('pointerenter',e=>{active=-1;setActive(indexAt(e),e)});
-  hit.addEventListener('pointerleave',()=>{active=-1;marker.setAttribute('visibility','hidden');hideTip()});
+  hit.addEventListener('pointermove',e=>{if(isTouchDevice())return;const i=indexAt(e);if(i!==active)setActive(i,e);else positionTip(e)});
+  hit.addEventListener('pointerenter',e=>{if(isTouchDevice())return;active=-1;setActive(indexAt(e),e)});
+  hit.addEventListener('pointerleave',()=>{if(isTouchDevice())return;active=-1;marker.setAttribute('visibility','hidden');hideTip()});
   hit.addEventListener('click',e=>{const i=indexAt(e);if(i>=0)select(arr[i],e)});
   hit.setAttribute('tabindex','0');hit.setAttribute('role','button');hit.setAttribute('aria-label','移動滑鼠顯示星等或負評佔比與評論數量，點擊查看評論');
   hit.addEventListener('focus',()=>setActive(Math.max(0,active)));
@@ -242,9 +242,9 @@ if(f){d.onclick=f;d.className="lk"}d.append(el("b",a),el("span",b));$("kpi").app
   const indexAt=e=>{const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;
     const matrix=svg.getScreenCTM();if(!matrix)return -1;
     const loc=pt.matrixTransform(matrix.inverse());return Math.min(arr.length-1,Math.max(0,Math.floor((loc.x-pad.l)/w*arr.length)))};
-  hit.addEventListener('pointermove',e=>{const i=indexAt(e);if(i<0)return;if(i===active){positionTip(e);return}active=i;let x=X(i);marker.setAttribute('x1',x);marker.setAttribute('x2',x);marker.setAttribute('visibility','visible');hover(arr[i],e);});
-  hit.addEventListener('pointerenter',e=>{active=-1;const i=indexAt(e);if(i>=0){active=i;marker.setAttribute('x1',X(i));marker.setAttribute('x2',X(i));marker.setAttribute('visibility','visible');hover(arr[i],e)}});
-  hit.addEventListener('pointerleave',()=>{active=-1;marker.setAttribute('visibility','hidden');hideTip()});
+  hit.addEventListener('pointermove',e=>{if(isTouchDevice())return;const i=indexAt(e);if(i<0)return;if(i===active){positionTip(e);return}active=i;let x=X(i);marker.setAttribute('x1',x);marker.setAttribute('x2',x);marker.setAttribute('visibility','visible');hover(arr[i],e);});
+  hit.addEventListener('pointerenter',e=>{if(isTouchDevice())return;active=-1;const i=indexAt(e);if(i>=0){active=i;marker.setAttribute('x1',X(i));marker.setAttribute('x2',X(i));marker.setAttribute('visibility','visible');hover(arr[i],e)}});
+  hit.addEventListener('pointerleave',()=>{if(isTouchDevice())return;active=-1;marker.setAttribute('visibility','hidden');hideTip()});
   hit.addEventListener('click',e=>{const i=indexAt(e);if(i>=0)select(arr[i],e)});
   hit.setAttribute('tabindex','0');hit.setAttribute('role','button');hit.setAttribute('aria-label','移動滑鼠查看各期數據，點擊目前指向的期間以查看評論');
   hit.addEventListener('focus',()=>hover(arr[Math.max(0,active)]));
@@ -289,12 +289,23 @@ if(f){d.onclick=f;d.className="lk"}d.append(el("b",a),el("span",b));$("kpi").app
    };
    display(v,'');
    if(o){tip.append(el('div','去年同期 · '+o.k));display(o,'去年')}
+   if(isTouchDevice()){
+     const action=document.createElement('button');
+     action.type='button';action.className='tr-tip-open';action.textContent='查看該期評論';
+     action.addEventListener('click',ev=>{ev.stopPropagation();const chosen=mobileTipRange;if(chosen){hideTip();go({m1:chosen.start,m2:chosen.end})}});
+     tip.append(action);
+   }
    tip.hidden=false;
    positionTip(e);
  }
  function positionTip(e){
    const tip=E('tr-tooltip'),host=E('tr-chart');if(!tip||tip.hidden||!host)return;
    const r=host.getBoundingClientRect();
+   if(isTouchDevice()){
+     tip.style.left='8px';tip.style.top='8px';
+     tip.style.maxWidth='calc(100% - 16px)';
+     return;
+   }
    let x=e&&typeof e.clientX==='number'?e.clientX-r.left:r.width/2;
    let y=e&&typeof e.clientY==='number'?e.clientY-r.top:r.height/2;
    // Clamp within the chart without clipping at either edge.
@@ -304,16 +315,29 @@ if(f){d.onclick=f;d.className="lk"}d.append(el("b",a),el("span",b));$("kpi").app
    if(y<8)y=Math.min(r.height-hh-8,(e?e.clientY-r.top:0)+17);
    tip.style.left=Math.round(Math.max(8,x))+'px';tip.style.top=Math.round(Math.max(8,y))+'px';
  }
- function hideTip(){const tip=E('tr-tooltip');if(tip&&!window.matchMedia('(hover: none)').matches)tip.hidden=true}
- let lastMobileSelection='';
+ function isTouchDevice(){return window.matchMedia('(hover: none) and (pointer: coarse)').matches}
+ let mobileTipRange=null;
+ function hideTip(){const tip=E('tr-tooltip');if(tip)tip.hidden=true;mobileTipRange=null}
  function select(r,e){r=r.cur||r;if(!r||!r.start||!r.n)return;
-   if(window.matchMedia('(hover: none)').matches){
+   if(isTouchDevice()){
      const key=r.start+'|'+r.end;
-     if(lastMobileSelection===key){lastMobileSelection='';go({m1:r.start,m2:r.end});return}
-     lastMobileSelection=key;hover({cur:r},e);return;
+     if(mobileTipRange&&(mobileTipRange.start+'|'+mobileTipRange.end)===key){hideTip();return}
+     mobileTipRange={start:r.start,end:r.end};hover({cur:r},e);return;
    }
    go({m1:r.start,m2:r.end});
  }
+ document.addEventListener('click',e=>{
+   if(!isTouchDevice()||!mobileTipRange)return;
+   const host=E('tr-chart');if(host&&host.contains(e.target)&&e.target.tagName&&e.target.tagName.toLowerCase()!=='rect'&&!e.target.closest('button'))hideTip();
+ },false);
+ // Touch dismisses reliably outside the plotted SVG or the active tooltip.
+ document.addEventListener('pointerdown',e=>{
+   if(!isTouchDevice()||!mobileTipRange)return;
+   const host=E('tr-chart'),tip=E('tr-tooltip');
+   if(tip&&tip.contains(e.target))return;
+   if(host&&e.target.closest&&e.target.closest('svg')&&host.contains(e.target))return;
+   hideTip();
+ },true);
  function navDraw(){const host=E('tr-navigator');host.replaceChildren();if(!monthKeys.length)return;
    const N=monthKeys.length,W=900,H=78,l=10,r=890,top=8,bottom=65,unit=(r-l)/N;
    const svg=add(host,'svg',{viewBox:`0 0 ${W} ${H}`,role:'group','aria-label':'拖曳以設定時間範圍'});
@@ -342,7 +366,7 @@ if(f){d.onclick=f;d.className="lk"}d.append(el("b",a),el("span",b));$("kpi").app
    svg.addEventListener('pointerup',finish);svg.addEventListener('pointercancel',finish);
  }
  function syncControls(){E('tr-range').value=state.range;E('tr-from').value=state.from;E('tr-to').value=state.to}
- function draw(skipNav=false){let {data,previous,prevFrom,prevTo}=pick(),S=stats(data),P=stats(previous),c=E('tr-chart');c.replaceChildren();E('tr-summary').hidden=true;
+ function draw(skipNav=false){let {data,previous,prevFrom,prevTo}=pick(),S=stats(data),P=stats(previous),c=E('tr-chart');c.replaceChildren();mobileTipRange=null;E('tr-summary').hidden=true;
   E('tr-modes').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.mode===state.mode));
   let f=E('tr-facts');f.replaceChildren();const make=(label,val)=>{let x=document.createElement('div');x.append(el('span',label),el('b',val));f.append(x)};
   make('範圍平均星等',S.n?fm(S.avg)+' ★':'—');make('1～2 星負評佔比',S.n?fm(S.ratio)+'%':'—');make('選取期間評論數',S.n+' 則');
