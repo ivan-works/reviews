@@ -33,6 +33,7 @@ main{max-width:980px;margin:0 auto;padding:20px 16px 48px}h1{font-size:22px;marg
 @media(max-width:620px){.tr-modes{gap:5px}.tr-modes button{padding:8px 2px;font-size:12px}.tr-modes button.on{padding:7px 1px}.tr-modes button small{display:none}.tr-sel{grid-template-columns:repeat(2,minmax(0,1fr))}.tr-facts{gap:6px}.tr-facts div{padding:8px 7px}.tr-facts span{font-size:10px}.tr-facts b{font-size:15px}.tr-nav-hint{font-size:10px}.tr-nav svg{height:48px}.tr-nav-foot{font-size:10px}}
 .tr-reset-short{display:none}.tr-time{grid-template-columns:repeat(4,minmax(0,1fr)) auto;align-items:end}.tr-time label:nth-child(1){grid-area:range}.tr-time label:nth-child(2){grid-area:period}.tr-time label:nth-child(3){grid-area:from}.tr-time label:nth-child(4){grid-area:to}.tr-time #tr-reset{grid-area:reset}.tr-time{grid-template-areas:"range period from to reset"}@media(max-width:620px){.tr-time{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;grid-template-areas:"range period reset" "from to to"}.tr-time label:nth-child(3),.tr-time label:nth-child(4){grid-area:auto}.tr-time label:nth-child(3){grid-column:1 / -1;grid-row:2;width:calc((100% - 10px)/2)}.tr-time label:nth-child(4){grid-column:1 / -1;grid-row:2;width:calc((100% - 10px)/2);justify-self:end}.tr-time #tr-reset{justify-self:end;max-width:100%;padding:0 10px}.tr-reset-full{display:none}.tr-reset-short{display:inline}}
 #home-logo{font:inherit;padding:0;border:0;background:transparent;cursor:pointer;vertical-align:middle}#home-logo:focus-visible{outline:2px solid var(--ac);outline-offset:4px;border-radius:4px}
+.chart-summary{margin:12px 0 0;padding:12px 14px;background:var(--bg);border-left:3px solid var(--ac);border-radius:6px;font-size:13px;line-height:1.7}.chart-summary p{margin:0 0 5px;text-align:left;color:var(--tx)}.chart-summary p:last-child{margin:0}.chart-summary b{color:var(--ac)}
 </style></head><body><div id="login"><div class="lg"><div class="logo lgo" role="img" aria-label="長安醫院"></div><h2>長安醫院評論分析</h2><p class="note">內部資料,請登入</p><input id="lu" placeholder="帳號" autocomplete="username"><input id="lp" type="password" placeholder="密碼" autocomplete="current-password"><button id="lb" type="button">登入</button><p id="lm" class="note"></p></div></div><div id="app" hidden><main>
 <button id="out" type="button" style="float:right;font:inherit;font-size:13px;padding:4px 12px;border:1px solid var(--ln);border-radius:8px;background:var(--card);color:var(--tx);cursor:pointer">登出</button><h1><button id="home-logo" type="button" aria-label="回到首頁並重設篩選" title="回到首頁"><span class="logo hl" role="img" aria-label="長安醫院"></span></button>長安醫院 Google 評論分析</h1><div class="sub" id="sub"></div>
 <nav id="nav"></nav><section data-p="home"><p class="note">💡 點選星等、年份、主題、單位、醫師,可直接查看對應的評論</p><div class="kpi" id="kpi"></div><div style="height:14px"></div>
@@ -40,13 +41,14 @@ main{max-width:980px;margin:0 auto;padding:20px 16px 48px}h1{font-size:22px;marg
 
 <div class="card" id="trend-card"><div class="tr-head"><h2 style="margin-bottom:3px">評論趨勢比較</h2><div class="note">先選要看的指標與時間範圍;需要時再到「進階設定」篩選單位、主題。點擊圖表可查看該期間的原始評論。</div></div>
 <div class="tr-modes" id="tr-modes"><button type="button" data-mode="rating" class="on">評價趨勢<small>平均星等變化</small></button><button type="button" data-mode="negative">負評分析<small>負評佔比與數量</small></button><button type="button" data-mode="structure">星等結構<small>星等分布變化</small></button><button type="button" data-mode="relation">評價與評論量<small>星等與樣本量</small></button></div>
-<div class="tr-sel tr-time"><label>時間範圍<select id="tr-range"><option value="12">近12個月</option><option value="24">近24個月</option><option value="all">全部資料</option><option value="custom">自訂區間</option></select></label><label>統計週期<select id="tr-period"><option value="month">每月</option><option value="quarter">每季</option><option value="year">每年</option></select></label><label>開始日期<input id="tr-from" type="date" aria-label="趨勢開始日期"></label><label>結束日期<input id="tr-to" type="date" aria-label="趨勢結束日期"></label><button type="button" id="tr-reset" aria-label="重設為近12個月" title="重設為近12個月"><span class="tr-reset-full">重設為近12個月</span><span class="tr-reset-short" aria-hidden="true">重設</span></button></div>
+<div class="tr-sel tr-time"><label>時間範圍<select id="tr-range"><option value="30">近30天</option><option value="12">近12個月</option><option value="24">近24個月</option><option value="all">全部資料</option><option value="custom">自訂區間</option></select></label><label>統計週期<select id="tr-period"><option value="week">每週</option><option value="month">每月</option><option value="quarter">每季</option><option value="year">每年</option></select></label><label>開始日期<input id="tr-from" type="date" aria-label="趨勢開始日期"></label><label>結束日期<input id="tr-to" type="date" aria-label="趨勢結束日期"></label><button type="button" id="tr-reset" aria-label="重設為近12個月" title="重設為近12個月"><span class="tr-reset-full">重設為近12個月</span><span class="tr-reset-short" aria-hidden="true">重設</span></button></div>
 <div class="tr-toggles"><label class="tr-cmp"><input type="checkbox" id="tr-compare">顯示去年同期比較</label><span id="tr-options" class="tr-option"></span></div>
 <div id="tr-modeopt" class="tr-option"></div>
 <details class="tr-adv" id="tr-adv"><summary id="tr-adv-sum">進階設定(單位、主題)</summary><div class="tr-adv-body"><div class="tr-sel"><label>單位<select id="tr-unit"><option value="">全部單位</option></select></label><label>主題<select id="tr-topic"><option value="">全部主題</option></select></label></div></div></details>
 <div class="tr-scope" id="tr-scope"></div><div class="tr-hint" id="tr-hint" hidden></div>
 <div id="tr-facts" class="tr-facts"></div>
 <div class="tr-chartwrap"><div id="tr-chart" class="tr-chart" aria-label="評論趨勢互動圖表"></div><div class="tr-tooltip" id="tr-tooltip" aria-live="polite" hidden></div></div>
+<div id="trend-summary" class="chart-summary"></div>
 <div class="tr-nav"><div class="tr-nav-hint">完整資料時間軸:拖曳兩側把手調整開始與結束月份,拖曳中間移動範圍(空白處不會變動)</div><div id="tr-navigator"></div><div class="tr-nav-foot"><span id="tr-nav-first"></span><span id="tr-nav-current"></span><span id="tr-nav-last"></span></div></div>
 <details class="tr-notebox"><summary>ⓘ 統計說明</summary><p class="tr-note" id="tr-note"></p></details></div>
 <div class="card"><h2>主題統計(依評論文字關鍵字)</h2><div class="w"><table id="th"></table></div><p class="note">一則評論可同時屬於多個主題;為關鍵字比對,屬概略統計。「其他」是有留文字但不屬於以上任何主題的評論;「僅評分」是只給星等、沒有留文字的評論。「醫師相關」包含提到醫師姓名、姓氏,或只寫「醫師」「醫生」的評論。</p></div>
@@ -56,6 +58,7 @@ main{max-width:980px;margin:0 auto;padding:20px 16px 48px}h1{font-size:22px;marg
 <div class="note" id="cnt"></div><div class="note">未留文字的評分也會列出,內容顯示為「僅評分」。</div><div class="pg" id="pg1"></div><div id="list"></div><div class="pg" id="pg2"></div></div>
 </section><p class="note">資料來源:Google 商家檔案 Takeout 匯出,內部使用。醫師所屬科別依 2019–2026 年 6 月及 115 年 10 月門診表。</p></main></div>
 <script>
+function explain(id,how,summary){const box=document.getElementById(id);if(!box)return;box.replaceChildren();[['圖表重點',summary]].forEach(([title,text])=>{const p=document.createElement('p'),b=document.createElement('b');b.textContent=title+'：';p.append(b,document.createTextNode(text));box.append(p)})}
 function start(D){let resetTrend;const $=id=>document.getElementById(id),st=n=>"★".repeat(n),DN=x=>({"健檢":"健檢中心","中醫科":"中醫科(已關閉)"}[x]||x);
 const el=(t,h)=>{const e=document.createElement(t);e.textContent=h;return e};
 $("sub").textContent=`共 ${D.n} 則評論(其中 ${D.txt} 則含文字),2016–2026`;
@@ -92,12 +95,14 @@ if(f){d.onclick=f;d.className="lk"}d.append(el("b",a),el("span",b));$("kpi").app
  const allAvg=ROWS.reduce((a,r)=>a+r.star,0)/ROWS.length;
  let FR=ROWS,mAgg=new Map();const cnt=k=>(mAgg.get(k)||{n:0}).n;
  function applyFilter(){const ti=state.topic?D.thn.indexOf(state.topic):-1;FR=ROWS.filter(r=>(!state.unit||r.units.includes(state.unit))&&(ti<0||r.topics.includes(ti)));mAgg=new Map();FR.forEach(r=>{const k=r.date.slice(0,7);let v=mAgg.get(k);if(!v){v={n:0,sum:0,bad:0,c:[0,0,0,0,0]};mAgg.set(k,v)}v.n++;v.sum+=r.star;if(r.star<=2)v.bad++;v.c[r.star-1]++})}
- function quickRange(){state.to=maxDay;state.from=state.range==='all'?minDay:moStart(mstr(mi(latest)-Number(state.range)+1))}
+ const addDays=(day,n)=>{const d=new Date(day+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)};
+ const weekStart=day=>{const d=new Date(day+'T00:00:00Z');return addDays(day,-((d.getUTCDay()+6)%7))};
+ function quickRange(){state.to=maxDay;state.from=state.range==='30'?addDays(maxDay,-29):state.range==='all'?minDay:moStart(mstr(mi(latest)-Number(state.range)+1));if(state.from<minDay)state.from=minDay} 
  function clampDates(){if(state.from>state.to){const t=state.from;state.from=state.to;state.to=t}if(state.from<minDay)state.from=minDay;if(state.to>maxDay)state.to=maxDay}
- const keyOf=m=>state.period==='year'?m.slice(0,4):state.period==='quarter'?m.slice(0,4)+'-Q'+Math.ceil(Number(m.slice(5,7))/3):m;
- function pBounds(m){const y=Number(m.slice(0,4)),mo=Number(m.slice(5,7));if(state.period==='year')return [y+'-01-01',y+'-12-31'];if(state.period==='quarter'){const q0=Math.floor((mo-1)/3)*3+1,a=String(q0).padStart(2,'0');return [`${y}-${a}-01`,moEnd(`${y}-${String(q0+2).padStart(2,'0')}`)]}return [m+'-01',moEnd(m)]}
- function periods(from,to){const L=[],idx=new Map();for(let x=mi(from.slice(0,7));x<=mi(to.slice(0,7));x++){const m=mstr(x),k=keyOf(m);let g=idx.get(k);if(!g){const [ps,pe]=pBounds(m);g={k,start:m,end:m,pStart:ps,pEnd:pe,n:0,sum:0,bad:0,c:[0,0,0,0,0],partial:false};idx.set(k,g);L.push(g)}g.end=m}return L}
- function fill(L,from,to){const idx=new Map(L.map(g=>[g.k,g]));FR.forEach(r=>{if(r.date<from||r.date>to)return;const g=idx.get(keyOf(r.date.slice(0,7)));if(!g)return;g.n++;g.sum+=r.star;if(r.star<=2)g.bad++;g.c[r.star-1]++});L.forEach(g=>{g.avg=g.n?g.sum/g.n:NaN;g.ratio=g.n?g.bad/g.n*100:NaN});
+ const keyOf=m=>state.period==='week'?weekStart(m):state.period==='year'?m.slice(0,4):state.period==='quarter'?m.slice(0,4)+'-Q'+Math.ceil(Number(m.slice(5,7))/3):m;
+ function pBounds(m){if(state.period==='week'){const a=weekStart(m);return [a,addDays(a,6)]}const y=Number(m.slice(0,4)),mo=Number(m.slice(5,7));if(state.period==='year')return [y+'-01-01',y+'-12-31'];if(state.period==='quarter'){const q0=Math.floor((mo-1)/3)*3+1,a=String(q0).padStart(2,'0');return [`${y}-${a}-01`,moEnd(`${y}-${String(q0+2).padStart(2,'0')}`)]}return [m+'-01',moEnd(m)]}
+ function periods(from,to){if(state.period==='week'){const L=[];for(let a=weekStart(from);a<=to;a=addDays(a,7)){const b=addDays(a,6);L.push({k:a,start:a.slice(0,7),end:b.slice(0,7),pStart:a,pEnd:b,n:0,sum:0,bad:0,c:[0,0,0,0,0],partial:false})}return L}const L=[],idx=new Map();for(let x=mi(from.slice(0,7));x<=mi(to.slice(0,7));x++){const m=mstr(x),k=keyOf(m);let g=idx.get(k);if(!g){const [ps,pe]=pBounds(m);g={k,start:m,end:m,pStart:ps,pEnd:pe,n:0,sum:0,bad:0,c:[0,0,0,0,0],partial:false};idx.set(k,g);L.push(g)}g.end=m}return L}
+ function fill(L,from,to){const idx=new Map(L.map(g=>[g.k,g]));FR.forEach(r=>{if(r.date<from||r.date>to)return;const g=idx.get(keyOf(state.period==='week'?r.date:r.date.slice(0,7)));if(!g)return;g.n++;g.sum+=r.star;if(r.star<=2)g.bad++;g.c[r.star-1]++});L.forEach(g=>{g.avg=g.n?g.sum/g.n:NaN;g.ratio=g.n?g.bad/g.n*100:NaN});
   if(L.length){const f=L[0],l=L[L.length-1];if(from>f.pStart){f.partial=true;f.pnote='資料自 '+from}if(to<l.pEnd){l.partial=true;l.pnote='資料至 '+to}}return L}
  const shiftYear=d=>{const [y,m,dd]=d.split('-').map(Number);const mx=new Date(Date.UTC(y-1,m,0)).getUTCDate();return `${y-1}-${String(m).padStart(2,'0')}-${String(Math.min(dd,mx)).padStart(2,'0')}`};
  function pick(){clampDates();const data=fill(periods(state.from,state.to),state.from,state.to);let previous=[],pf='',pt='';if(state.compare==='year'){pf=shiftYear(state.from);pt=shiftYear(state.to);previous=fill(periods(pf,pt),pf,pt)}return {data,previous,pf,pt}}
@@ -161,7 +166,7 @@ if(f){d.onclick=f;d.className="lk"}d.append(el("b",a),el("span",b));$("kpi").app
  function posTip(e){const tip=E('tr-tooltip');if(tip.hidden||isTouchDevice())return;const host=tip.parentElement,r=host.getBoundingClientRect();let x=e&&typeof e.clientX==='number'?e.clientX-r.left:r.width/2,y=e&&typeof e.clientY==='number'?e.clientY-r.top:r.height/2;const ww=tip.offsetWidth||220,hh=tip.offsetHeight||80;x=Math.max(8,Math.min(r.width-ww-8,x+14));y=y-hh-12;if(y<8)y=Math.min(r.height-hh-8,(e?e.clientY-r.top:0)+18);tip.style.left=Math.round(Math.max(8,x))+'px';tip.style.top=Math.round(Math.max(8,y))+'px'}
  function hideTip(){const t=E('tr-tooltip');t.hidden=true;tipItem=null}
  function choose(r){const g=r.cur;if(!g||!g.n)return;const o={};const cutStart=g.partial&&g.pnote.startsWith('資料自'),cutEnd=g.partial&&g.pnote.startsWith('資料至')&&state.to<maxDay;
-  if(cutStart||cutEnd){o.d1=cutStart?state.from:g.pStart;o.d2=cutEnd?state.to:g.pEnd}else{o.m1=g.start;o.m2=g.end}
+  if(state.period==='week'||cutStart||cutEnd){o.d1=g.pStart<state.from?state.from:g.pStart;o.d2=g.pEnd>state.to?state.to:g.pEnd}else{o.m1=g.start;o.m2=g.end}
   if(state.unit)o.fd=state.unit;if(state.topic)o.fth=state.topic;go(o)}
  const GOOD=getComputedStyle(document.documentElement).getPropertyValue('--good').trim()||'#15803d';
  /* ---------- 時間軸(拖曳選範圍) ---------- */
@@ -193,7 +198,7 @@ if(f){d.onclick=f;d.className="lk"}d.append(el("b",a),el("span",b));$("kpi").app
    function finish(){if(!drag)return;drag=null;if(raf){cancelAnimationFrame(raf);raf=0}host.classList.remove('dragging');draw()}
    [[hitL,'left'],[hitR,'right'],[hitB,'move']].forEach(([h,k])=>{h.addEventListener('pointerdown',e=>down(k,e));h.addEventListener('pointermove',move);h.addEventListener('pointerup',finish);h.addEventListener('pointercancel',finish)});
  }
- function syncControls(){E('tr-range').value=state.range;E('tr-period').value=state.period;E('tr-from').value=state.from;E('tr-to').value=state.to;E('tr-unit').value=state.unit;E('tr-topic').value=state.topic;E('tr-compare').checked=state.compare==='year'}
+ function syncControls(){E('tr-range').value=state.range;E('tr-period').value=state.period;['tr-from','tr-to'].forEach(id=>{if(document.activeElement!==E(id))E(id).value=state[id==='tr-from'?'from':'to']});E('tr-unit').value=state.unit;E('tr-topic').value=state.topic;E('tr-compare').checked=state.compare==='year'}
  const unitCounts=new Map();ROWS.forEach(r=>r.units.forEach(u=>unitCounts.set(u,(unitCounts.get(u)||0)+1)));
  const topicCounts=D.thn.map((t,i)=>[t,ROWS.filter(r=>r.topics.includes(i)).length]);
  [...unitCounts.entries()].sort((a,b)=>b[1]-a[1]).forEach(([u,c])=>{const o=document.createElement('option');o.value=u;o.textContent=`${DN(u)}(${c})`;E('tr-unit').append(o)});
@@ -204,9 +209,9 @@ if(f){d.onclick=f;d.className="lk"}d.append(el("b",a),el("span",b));$("kpi").app
   const f=E('tr-facts');f.replaceChildren();const make=(l,v)=>{const d=document.createElement('div');d.append(el('span',l),el('b',v));f.append(d)};
   make('範圍平均星等',S.n?fm(S.avg)+' ★':'—');make('1～2 星負評佔比',S.n?fm(S.ratio)+'%':'—');make('選取期間評論數',S.n+' 則');
   const sc=[];if(state.unit)sc.push(DN(state.unit));if(state.topic)sc.push(state.topic);
-  E('tr-scope').textContent=`目前顯示:${sc.length?sc.join(' ・ '):'全部評論'}(共 ${S.n} 則)｜${state.from} ～ ${state.to}`;
+  E('tr-scope').textContent=`目前顯示:${sc.length?sc.join(' ・ '):'全部評論'}(共 ${S.n} 則)｜${state.from} ～ ${state.to}${state.range==='30'?'（以資料最新日期往回30天）':''}`;
   const hint=E('tr-hint');hint.hidden=true;hint.replaceChildren();
-  if(data.length>=4&&S.n/data.length<3&&state.period!=='year'){const nx=state.period==='month'?'quarter':'year';hint.append(`這個條件平均每${state.period==='month'?'月':'季'}只有 ${fm(S.n/data.length)} 則評論,圖會很零碎,建議改用「每${nx==='quarter'?'季':'年'}」。`);const b=el('button',`改用每${nx==='quarter'?'季':'年'}`);b.type='button';b.onclick=()=>{state.period=nx;draw(true)};hint.append(b);hint.hidden=false}
+  if(data.length>=4&&S.n/data.length<3&&state.period!=='year'){const nx=state.period==='week'?'month':state.period==='month'?'quarter':'year';hint.append(`這個條件平均每${state.period==='week'?'週':state.period==='month'?'月':'季'}只有 ${fm(S.n/data.length)} 則評論,圖會很零碎,建議改用「每${nx==='month'?'月':nx==='quarter'?'季':'年'}」。`);const b=el('button',`改用每${nx==='month'?'月':nx==='quarter'?'季':'年'}`);b.type='button';b.onclick=()=>{state.period=nx;draw(true)};hint.append(b);hint.hidden=false}
   const wantCompare=state.compare==='year',compareReady=wantCompare&&P.n>0;
   const opt=E('tr-options');opt.replaceChildren();const chk=(label,checked,change)=>{const l=document.createElement('label'),i=document.createElement('input');i.type='checkbox';i.checked=checked;i.onchange=()=>change(i.checked);l.append(i,label);opt.append(l)};
   if(state.mode==='rating'){chk('顯示近12個月滾動平均',state.rolling,v=>{state.rolling=v;draw(true)});chk('顯示全部評論平均線',state.benchmark,v=>{state.benchmark=v;draw(true)})}
@@ -223,6 +228,63 @@ if(f){d.onclick=f;d.className="lk"}d.append(el("b",a),el("span",b));$("kpi").app
   else if(state.mode==='structure'){const names=['1～2 星','3 星','4～5 星'],cols=['#c2410c','#a3a3a3',GOOD],stack=[{part:pc,series:cols.map((col,k)=>({color:col,value:r=>share(r.cur,k)}))}];if(compareReady)stack.push({part:po,series:cols.map((col,k)=>({color:col,value:r=>share(r.old,k)}))});cfg={left:{low:0,high:100,percent:true,color:'currentColor'},stack,aria:'星等結構'};names.forEach((nm,k)=>legend.push([(compareReady?'本期 ':'')+nm,cols[k]]));if(compareReady)legend.push(['去年同期(半透明)','#a3a3a3'])}
   else{const lines=[{label:'本期平均星等',color:LC,value:cav,part:pc}],bars=[{label:'本期總評論數',color:'#80b8dd',axis:'R',slot:0,value:cn,part:pc}];if(compareReady){lines.push({label:'去年同期平均星等',color:OLD,dash:true,value:oav,part:po});bars.push({label:'去年同期總評論數',color:'#a1aab7',opacity:.5,axis:'R',slot:1,value:on,part:po})}cfg={left:{low:1,high:5,color:LC,title:'平均星等(★)'},right:{title:'評論數量(則)'},lines,bars,aria:'平均星等與評論數量'};[...lines,...bars].forEach(d=>legend.push([d.label,d.color]))}
   plot(c,shown,cfg);
+  const how=state.mode==='rating'?'折線越高，該期平均星等越高；沒有評論的期間會斷線，不代表零分。':state.mode==='structure'?'每根長條合計為100%；綠色是4～5星、灰色是3星、橘紅色是1～2星。':state.mode==='negative'?(state.negativeView==='ratio'?'橘紅折線看左軸的負評佔比，藍色長條看右軸的評論則數；兩個軸的高度不能直接比較。':'長條分別顯示全部評論與1～2星負評的則數；負評數增加不一定代表負評比例增加。'):'綠色折線看左軸的平均星等，藍色長條看右軸的評論則數；一起觀察評價與樣本量。';
+  const parts=[];
+  if(!S.n)parts.push('這個期間沒有評論；可以改選其他時間或取消篩選。');
+  else{
+   const current=FR.filter(r=>r.date>=state.from&&r.date<=state.to),good=current.filter(r=>r.star>=4).length;
+   const one=current.filter(r=>r.star===1).length,five=current.filter(r=>r.star===5).length;
+   if(state.mode==='structure'&&S.n>=10&&one/S.n>=.3&&five/S.n>=.3&&(one+five)/S.n>=.8)parts.push('評論集中在一星與五星，評價兩極。');
+   else if(S.ratio>=60)parts.push('這段時間負評偏多。');
+   else if(good/S.n>=.6)parts.push('這段時間以好評為主。');
+   const span=Math.round((new Date(state.to+'T00:00:00Z')-new Date(state.from+'T00:00:00Z'))/86400000)+1,prevEnd=addDays(state.from,-1),prevStart=addDays(state.from,-span);
+   const prior=FR.filter(r=>r.date>=prevStart&&r.date<=prevEnd),pn=prior.length,pb=prior.filter(r=>r.star<=2).length;
+   if(prevStart>=minDay&&pn){const pr=pb/pn*100,pa=prior.reduce((n,r)=>n+r.star,0)/pn;
+    const neg=state.mode==='negative'||state.mode==='structure',d=neg?S.ratio-pr:S.avg-pa;
+    parts.push(Math.abs(d)<(neg?5:.2)?'與前一段期間相比，評價差不多。':(neg?d<0:d>0)?'與前一段期間相比，評價變好了。':'與前一段期間相比，評價變差了。');
+   }
+
+   const periodLabel=g=>state.period==='week'?g.k+'這週':state.period==='month'?Number(g.k.slice(5,7))+'月':state.period==='quarter'?g.k.replace('-Q','年第')+'季':g.k+'年';
+   const signals=[];
+   for(let i=1;i<data.length;i++){const before=data[i-1],now=data[i];if(!before.n||!now.n||before.partial||now.partial)continue;
+    const rise=now.ratio-before.ratio,drop=now.avg-before.avg;
+    if((state.mode==='negative'||state.mode==='relation')&&now.n<before.n&&rise>=10)signals.push({weight:rise,text:`${periodLabel(now)}評論變少，但負評比例升高（${fm(before.ratio,0)}% → ${fm(now.ratio,0)}%），值得留意。`});
+    else if(state.mode==='relation'&&now.n>before.n&&drop<=-.3)signals.push({weight:-drop*20,text:`${periodLabel(now)}評論變多，平均星等卻下降（${fm(before.avg)} → ${fm(now.avg)}星），值得查看該期負評。`});
+    else if(state.mode==='rating'&&Math.abs(drop)>=.3)signals.push({weight:Math.abs(drop)*20,text:`${periodLabel(now)}的平均星等比上一期${drop>0?'提高':'降低'}（${fm(before.avg)} → ${fm(now.avg)}星）。`});
+    else if(state.mode==='structure'&&Math.abs(rise)>=10)signals.push({weight:Math.abs(rise),text:`${periodLabel(now)}的負評占比${rise>0?'擴大':'縮小'}（${fm(before.ratio,0)}% → ${fm(now.ratio,0)}%）。`});
+   }
+   signals.sort((a,b)=>b.weight-a.weight);if(signals.length){const generic=parts.findIndex(t=>t.startsWith('與前一段期間'));if(generic>=0)parts.splice(generic,1);parts.push(signals[0].text);}
+   const split=addDays(state.from,Math.floor(span/2)),changes=[];
+   const unitNames=[...new Set(current.flatMap(r=>r.units))];
+   unitNames.forEach(u=>{const early=current.filter(r=>r.date<split&&r.units.includes(u)),late=current.filter(r=>r.date>=split&&r.units.includes(u));if(early.length<3||late.length<3)return;const avg=rows=>rows.reduce((a,r)=>a+r.star,0)/rows.length,a=avg(early),b=avg(late),delta=b-a;if(Math.abs(delta)>=.2)changes.push({u,a,b,delta})});
+   changes.sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta));
+   const improved=changes.find(x=>x.delta>0),declined=changes.find(x=>x.delta<0);
+   if(improved)parts.push(`本範圍後半段，${DN(improved.u)}的平均評價${improved.delta<.5?'稍有提升':'提升'}（${fm(improved.a)} → ${fm(improved.b)}星）。`);
+   else if(declined)parts.push(`本範圍後半段，${DN(declined.u)}的平均評價下降（${fm(declined.a)} → ${fm(declined.b)}星），值得留意。`);
+   const units=new Map();current.forEach(r=>new Set(r.units).forEach(u=>{let x=units.get(u);if(!x){x={u,n:0,bad:0,good:0};units.set(u,x)}x.n++;if(r.star<=2)x.bad++;if(r.star>=4)x.good++}));
+   const badUnits=[...units.values()].filter(x=>x.bad).sort((a,b)=>b.bad-a.bad||b.bad/b.n-a.bad/a.n).slice(0,2);
+   const goodUnits=[...units.values()].filter(x=>x.good>=3&&x.good/x.n>=.6).sort((a,b)=>b.good-a.good||b.good/b.n-a.good/a.n).slice(0,2);
+   if(badUnits.length)parts.push(`優先留意：${badUnits.map(x=>DN(x.u)).join('、')}，負評較多。`);
+   if(goodUnits.length&&!improved)parts.push(`好評較多：${goodUnits.map(x=>DN(x.u)).join('、')}。`);
+   if(!S.bad)parts.push('沒有收到負評。');
+  }
+  if(wantCompare){
+   let comparison;
+   if(!S.n)comparison='選取期間沒有評論，無法與去年同期比較。';
+   else if(!P.n)comparison='去年同期沒有評論資料，無法比較。';
+   else{
+    const change=(a,b,unit)=>`${fm(a)}${unit} → ${fm(b)}${unit}`;
+    if(state.mode==='rating'){const d=S.avg-P.avg;comparison=`相較去年同期，平均評價${Math.abs(d)<.05?'相同':d>0?'提高':'下降'}（${change(P.avg,S.avg,'星')}）。`}
+    else if(state.mode==='negative'&&state.negativeView==='count'){comparison=`相較去年同期，負評${S.bad>P.bad?'增加':S.bad<P.bad?'減少':'則數相同'}（${P.bad} → ${S.bad}則），總評論 ${P.n} → ${S.n}則；負評比例 ${change(P.ratio,S.ratio,'%')}。`}
+    else if(state.mode==='negative'){comparison=`相較去年同期，負評比例${Math.abs(S.ratio-P.ratio)<.05?'相同':S.ratio>P.ratio?'上升':'下降'}（${change(P.ratio,S.ratio,'%')}），總評論 ${P.n} → ${S.n}則。`}
+    else if(state.mode==='structure'){const oldGood=previous.reduce((a,x)=>a+x.c[3]+x.c[4],0)/P.n*100,newGood=data.reduce((a,x)=>a+x.c[3]+x.c[4],0)/S.n*100;comparison=`相較去年同期，好評占比 ${change(oldGood,newGood,'%')}，負評占比 ${change(P.ratio,S.ratio,'%')}。`}
+    else comparison=`相較去年同期，評論${S.n>P.n?'增加':S.n<P.n?'減少':'則數相同'}（${P.n} → ${S.n}則），平均星等${Math.abs(S.avg-P.avg)<.05?'相同':S.avg>P.avg?'提高':'下降'}（${change(P.avg,S.avg,'星')}）。`;
+   }
+   const generic=parts.findIndex(t=>t.startsWith('與前一段期間'));if(generic>=0)parts.splice(generic,1);parts.unshift(comparison);
+  }
+  if(state.mode==='rating'&&S.n&&state.benchmark)parts.push(`選取期間平均 ${fm(S.avg)} 星，${Math.abs(S.avg-allAvg)<.05?'與':S.avg>allAvg?'高於':'低於'}全部評論平均 ${fm(allAvg)} 星。`);
+  if(state.mode==='rating'&&state.rolling){const rv=data.map(x=>rollingAt(x.end)).filter(Number.isFinite);if(rv.length>=2){const a=rv[0],b=rv.at(-1);parts.push(`近12個月滾動平均${Math.abs(b-a)<.05?'大致持平':b>a?'走高':'走低'}（${fm(a)} → ${fm(b)}星）。`)}else if(!rv.length)parts.push('目前沒有可顯示的近12個月滾動平均。')}
+  explain('trend-summary',how,parts.join(' '));
   const lg=document.createElement('div');lg.className='tr-legend';legend.forEach(([t,col])=>{const x=document.createElement('span'),d=document.createElement('i');d.className='tr-dot';d.style.background=col;x.append(d,t);lg.append(x)});
   if(data.some(x=>x.partial)||previous.some(x=>x.partial))lg.append(el('span','空心點、虛線、淡色框:資料不完整的期間'));c.append(lg);
   if(compareReady){const fo=document.createElement('div');fo.className='tr-comparison-foot';fo.textContent=`實線/原色:本期 ${state.from}～${state.to};虛線/淡色:去年同期 ${pf}～${pt}。按期間內第幾個統計週期對齊,並非同一天。`;c.append(fo)}
@@ -232,10 +294,12 @@ if(f){d.onclick=f;d.className="lk"}d.append(el("b",a),el("span",b));$("kpi").app
  }
  E('tr-modes').querySelectorAll('button').forEach(b=>b.onclick=()=>{state.mode=b.dataset.mode;draw(true)});
  E('tr-unit').onchange=e=>{state.unit=e.target.value;applyFilter();draw()};E('tr-topic').onchange=e=>{state.topic=e.target.value;applyFilter();draw()};
- [['tr-range','range'],['tr-period','period']].forEach(([id,key])=>E(id).onchange=e=>{state[key]=e.target.value;if(key==='range'&&state.range!=='custom')quickRange();draw()});
- ['tr-from','tr-to'].forEach(id=>E(id).addEventListener('change',e=>{if(!e.target.value)return;state[id==='tr-from'?'from':'to']=e.target.value;state.range='custom';clampDates();draw()}));
+ [['tr-range','range'],['tr-period','period']].forEach(([id,key])=>E(id).onchange=e=>{state[key]=e.target.value;if(key==='range'&&state.range!=='custom'){state.period=state.range==='30'?'week':'month';quickRange();}draw()});
+ const pendingDates=new Set();
+ function commitDate(id){const input=E(id);if(!input.value||!input.validity.valid){input.value=state[id==='tr-from'?'from':'to'];syncControls();pendingDates.delete(id);return}state[id==='tr-from'?'from':'to']=input.value;state.range='custom';pendingDates.delete(id);clampDates();draw();input.value=state[id==='tr-from'?'from':'to']}
+ ['tr-from','tr-to'].forEach(id=>{const input=E(id);input.addEventListener('input',()=>pendingDates.add(id));input.addEventListener('change',()=>{pendingDates.add(id);if(document.activeElement!==input)commitDate(id)});input.addEventListener('blur',()=>{if(pendingDates.has(id))commitDate(id)});input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();commitDate(id)}})});
  E('tr-compare').onchange=e=>{state.compare=e.target.checked?'year':'none';draw(true)};
- E('tr-reset').onclick=()=>{state.range='12';quickRange();draw()};
+ E('tr-reset').onclick=()=>{state.range='12';state.period='month';quickRange();draw()};
  resetTrend=()=>{Object.assign(state,{mode:'rating',range:'12',period:'month',compare:'none',negativeView:'ratio',rolling:false,benchmark:false,from:'',to:'',unit:'',topic:''});E('tr-adv').open=false;E('tr-tooltip').hidden=true;applyFilter();quickRange();draw()};
  let lastW=0;if(window.ResizeObserver)new ResizeObserver(()=>{const w=E('tr-chart').clientWidth;if(w&&Math.abs(w-lastW)>1){lastW=w;draw()}}).observe(E('tr-chart'));
  applyFilter();quickRange();draw();
@@ -294,7 +358,12 @@ else if(dm=="pos"){const sh=x.hi/x.n,i=document.createElement("i");i.style.width
 else{const sh=x.lo/x.n,i=document.createElement("i");i.style.width=(x.lo/mx*100)+"%";i.style.background=`hsl(${Math.round(40-40*sh)} 70% ${Math.round(52-12*sh)}%)`;tr.append(i);vt=`${x.lo} 則 ・ ${pc(x.lo)}%`}
 const l=el("span",DN(x.u));l.className="l";const v=el("span",vt);v.className="v";row.append(l,tr,v);
 {const s=el("span","樣本少");s.className="sm";if(!(low&&x.n))s.style.visibility="hidden";row.append(s)}
-if(x.n)row.onclick=()=>g2(x.u,dm=="neg"?{fs:"L"}:dm=="pos"?{fs:"H"}:{});$("depbars").append(row)})}
+if(x.n)row.onclick=()=>g2(x.u,dm=="neg"?{fs:"L"}:dm=="pos"?{fs:"H"}:{});$("depbars").append(row)});
+let summary=$('dep-summary');if(!summary){summary=document.createElement('div');summary.id='dep-summary';summary.className='chart-summary';$('depbars').after(summary)}
+const ds=depStats(),eligible=ds.filter(x=>x.n>THR[dpd]);const metric=x=>dm==='avg'?x.avg:dm==='ratio'?x.hi/x.n:dm==='pos'?x.hi:x.lo;eligible.sort((a,b)=>metric(b)-metric(a));
+const top=eligible[0],how={avg:'長條越長，平均星等越高；灰色表示樣本少或沒有評論。',ratio:'綠、灰、紅分別是正評、中立與負評占比；依正評占比排列。',pos:'長條長度代表4～5星正評則數，顏色深淺代表正評占比。',neg:'長條長度代表1～2星負評則數，顏色深淺代表負評占比。'}[dm];
+explain('dep-summary',how,top?`${DN(top.u)}${dm==='avg'?'的平均評價最高。':dm==='ratio'?'的好評比例最高。':dm==='pos'?'收到最多好評。':'收到最多負評，建議優先留意。'}`:'目前沒有足夠的單位評論可比較。')
+}
 MODES.forEach(([k,n])=>{const b=el("button",n);b.dataset.k=k;b.type="button";b.onclick=()=>{dm=k;renderDep()};$("segm").append(b)});
 PER.forEach(([k,n])=>{const b=el("button",n);b.dataset.k=k;b.type="button";b.onclick=()=>{dpd=k;renderDep()};$("segp").append(b)});
 $("segm").prepend(Object.assign(el("span","統計方式"),{className:"note"}));$("segp").prepend(Object.assign(el("span","期間"),{className:"note"}));
