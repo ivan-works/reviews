@@ -59,6 +59,21 @@ main{max-width:980px;margin:0 auto;padding:20px 16px 48px}h1{font-size:22px;marg
 </section><p class="note">資料來源:Google 商家檔案 Takeout 匯出,內部使用。醫師所屬科別依 2019–2026 年 6 月及 115 年 10 月門診表。</p></main></div>
 <script>
 
+
+function rankUnitAttention(units){
+ const newer=units.filter(x=>x.recentN>=5&&x.beforeN>=5&&(x.recentRatio-x.beforeRatio>=.15||x.recentAvg-x.beforeAvg<=-.4)).map(x=>({...x,kind:'recent',score:(x.recentRatio-x.beforeRatio)*4+(x.beforeAvg-x.recentAvg)})).sort((a,b)=>b.score-a.score);
+ const persistent=units.filter(x=>x.n>=15&&x.recentN>=5&&x.recentRatio>=.5&&x.analysis.eligible.length>=3&&x.analysis.eligible.length/x.analysis.buckets.length>=.6&&x.analysis.eligible.filter(g=>g.ratio>=50).length/x.analysis.eligible.length>=.7).sort((a,b)=>b.ratio-a.ratio||b.bad-a.bad).map(x=>({...x,kind:'persistent'}));
+ const current=units.filter(x=>x.n>=8&&x.bad>=4&&x.ratio>=.5).sort((a,b)=>(b.bad+1)/(b.n+2)-(a.bad+1)/(a.n+2)||b.bad-a.bad).map(x=>({...x,kind:'current'}));
+ const result=[...newer];for(const x of [...persistent,...current])if(!result.some(y=>y.u===x.u))result.push(x);
+ return result.slice(0,2);
+}
+function unitImprovement(x){
+ if(x.recentN>=5&&x.beforeN>=5&&x.recentAvg-x.beforeAvg>=.4&&x.recentRatio<=x.beforeRatio)return 'recent';
+ const a=x.analysis,L=a.eligible;if(L.length<4||L.length/a.buckets.length<.6||x.delta<.4)return '';
+ const tail=L.slice(-2),prev=L.slice(-4,-2),avg=groups=>groups.reduce((n,g)=>n+g.sum,0)/groups.reduce((n,g)=>n+g.n,0);
+ return avg(tail)-avg(prev)>=.2?'sustained':'';
+}
+
 function analyzeReviewSeries(rows,from,to,metric='avg'){
  const days=Math.round((new Date(to+'T00:00:00Z')-new Date(from+'T00:00:00Z'))/86400000)+1;
  const scale=days>730?'year':days>365?'quarter':days>60?'month':'week';
@@ -73,18 +88,64 @@ function analyzeReviewSeries(rows,from,to,metric='avg'){
  while(cursor<=to){const [a,b]=bounds(cursor);const g={a,b,x:buckets.length,n:0,sum:0,bad:0,good:0,one:0,five:0,partial:a<from||b>to};buckets.push(g);map.set(a,g);const next=date(b);next.setUTCDate(next.getUTCDate()+1);cursor=iso(next)}
  rows.forEach(r=>{if(r.date<from||r.date>to)return;const g=map.get(bounds(r.date)[0]);if(!g)return;g.n++;g.sum+=r.star;if(r.star<=2)g.bad++;if(r.star>=4)g.good++;if(r.star===1)g.one++;if(r.star===5)g.five++});
  buckets.forEach(g=>{g.avg=g.n?g.sum/g.n:NaN;g.ratio=g.n?g.bad/g.n*100:NaN;g.goodRatio=g.n?g.good/g.n*100:NaN;g.label=scale==='year'?g.a.slice(0,4)+'年':scale==='quarter'?g.a.slice(0,4)+'年第'+(Math.floor((Number(g.a.slice(5,7))-1)/3)+1)+'季':scale==='month'?g.a.slice(0,4)+'年'+Number(g.a.slice(5,7))+'月':g.a+'這週';if(g.partial)g.label+='（'+(g.b>to?'截至'+to:'自'+from)+'）'});
- const eligible=buckets.filter(g=>g.n>=3),fit=L=>{if(L.length<2)return {slope:0,sse:0};const mx=L.reduce((a,g)=>a+g.x,0)/L.length,my=L.reduce((a,g)=>a+g[metric],0)/L.length,den=L.reduce((a,g)=>a+(g.x-mx)**2,0),slope=den?L.reduce((a,g)=>a+(g.x-mx)*(g[metric]-my),0)/den:0;return {slope,sse:L.reduce((a,g)=>a+(g[metric]-(my+slope*(g.x-mx)))**2,0)}};
+ const eligible=buckets.filter(g=>g.n>=5),fit=L=>{if(L.length<2)return {slope:0,sse:0};const mx=L.reduce((a,g)=>a+g.x,0)/L.length,my=L.reduce((a,g)=>a+g[metric],0)/L.length,den=L.reduce((a,g)=>a+(g.x-mx)**2,0),slope=den?L.reduce((a,g)=>a+(g.x-mx)*(g[metric]-my),0)/den:0;return {slope,sse:L.reduce((a,g)=>a+(g[metric]-(my+slope*(g.x-mx)))**2,0)}};
  const threshold=metric==='avg'?.3:10,whole=fit(eligible);let text='',turn=null;
- if(eligible.length>=5&&whole.sse>0){let best=null;
+ if(eligible.length>=5&&eligible.length/buckets.length>=.6&&whole.sse>0){let best=null;
   for(let i=2;i<eligible.length-2;i++){const left=eligible.slice(0,i+1),right=eligible.slice(i),lf=fit(left),rf=fit(right),a=lf.slope*(left.at(-1).x-left[0].x),b=rf.slope*(right.at(-1).x-right[0].x),error=lf.sse+rf.sse;
    if(a*b<0&&Math.abs(a)>=threshold&&Math.abs(b)>=threshold&&error<whole.sse*.55&&(!best||error<best.error))best={i,a,b,error}}
-  if(best){turn=eligible[best.i];text=`${eligible[0].label}至${turn.label}，${metric==='avg'?'平均評價':'負評比例'}逐步${best.a>0?'升高':'下降'}；之後至${eligible.at(-1).label}${best.b>0?'回升':'回落'}`}
+  if(best){turn=eligible[best.i];text=`${eligible[0].label}至${turn.label}，${metric==='avg'?'平均評價':metric==='goodRatio'?'好評占比':'負評比例'}逐步${best.a>0?'升高':'下降'}；之後至${eligible.at(-1).label}${best.b>0?'回升':'回落'}`}
  }
- if(!text&&eligible.length>=3){const delta=whole.slope*(eligible.at(-1).x-eligible[0].x),steps=eligible.slice(1).map((g,i)=>g[metric]-eligible[i][metric]),direction=Math.sign(delta),consistent=steps.filter(d=>Math.abs(d)<threshold/4||Math.sign(d)===direction).length/steps.length;
-  text=Math.abs(delta)<threshold?`${metric==='avg'?'平均評價':'負評比例'}整體大致穩定`:consistent>=.7?`${eligible[0].label}至${eligible.at(-1).label}，${metric==='avg'?'平均評價':'負評比例'}整體${delta>0?'上升':'下降'}`:`${metric==='avg'?'平均評價':'負評比例'}起伏較大，整體偏向${delta>0?'上升':'下降'}`;
+ if(!text&&eligible.length>=3&&eligible.length/buckets.length>=.6){const delta=whole.slope*(eligible.at(-1).x-eligible[0].x),steps=eligible.slice(1).map((g,i)=>g[metric]-eligible[i][metric]),direction=Math.sign(delta),consistent=steps.filter(d=>Math.abs(d)<threshold/4||Math.sign(d)===direction).length/steps.length;
+  text=Math.abs(delta)<threshold?`${metric==='avg'?'平均評價':metric==='goodRatio'?'好評占比':'負評比例'}整體大致穩定`:consistent>=.7?`${eligible[0].label}至${eligible.at(-1).label}，${metric==='avg'?'平均評價':metric==='goodRatio'?'好評占比':'負評比例'}整體${delta>0?'上升':'下降'}`:`${metric==='avg'?'平均評價':metric==='goodRatio'?'好評占比':'負評比例'}起伏較大，整體偏向${delta>0?'上升':'下降'}`;
  }
  if(!text){const n=rows.length,bad=rows.filter(r=>r.star<=2).length,good=rows.filter(r=>r.star>=4).length;text=!n?'這個期間沒有評論':bad/n>=.6?'這段時間負評偏多':good/n>=.6?'這段時間以好評為主':'這段時間好評、負評皆有，尚未形成持續走勢'}
  return {scale,buckets,eligible,text,turn,fit:whole,threshold};
+}
+
+
+function buildReviewSummary({rows,allRows,from,to,mode,negativeView='ratio',compare=false,rolling=false,benchmark=false}){
+ const f=(n,d=1)=>Number(n).toFixed(d),day=(s,n)=>new Date(Date.parse(s+'T00:00:00Z')+n*86400000).toISOString().slice(0,10),display=u=>({'健檢':'健檢中心','中醫科':'中醫科(已關閉)'}[u]||u);
+ const stats=L=>{const n=L.length,bad=L.filter(r=>r.star<=2).length,good=L.filter(r=>r.star>=4).length;return {n,bad,good,neutral:n-bad-good,avg:n?L.reduce((a,r)=>a+r.star,0)/n:0,ratio:n?bad/n*100:0,positive:n?good/n*100:0}};
+ const current=rows.filter(r=>r.date>=from&&r.date<=to),S=stats(current),total=stats(allRows),min=allRows.reduce((a,r)=>r.date<a?r.date:a,'9999-12-31'),max=allRows.reduce((a,r)=>r.date>a?r.date:a,'');
+ if(!S.n)return '選取期間沒有評論。';
+ const days=Math.round((Date.parse(to)-Date.parse(from))/86400000)+1,shiftYear=s=>{const [y,m,d]=s.split('-').map(Number);return `${y-1}-${String(m).padStart(2,'0')}-${String(Math.min(d,new Date(Date.UTC(y-1,m,0)).getUTCDate())).padStart(2,'0')}`};
+ const pf=compare?shiftYear(from):day(from,-days),pt=compare?shiftYear(to):day(from,-1),prior=rows.filter(r=>r.date>=pf&&r.date<=pt),P=stats(prior),ready=pf>=min&&pt<=max&&P.n>0,base=compare?'去年同期':'前一段等長期間';
+ const metric=mode==='rating'||mode==='relation'?'avg':mode==='structure'?'goodRatio':'ratio',analysis=analyzeReviewSeries(current,from,to,metric);
+ const parts=[],trend=analysis.eligible.length>=3&&analysis.eligible.length/analysis.buckets.length>=.6?analysis.text:'';
+ if(mode==='rating'){
+  const diff=S.avg-total.avg,impact=current.length===allRows.length?'即為整體平均':Math.abs(diff)<.05?'與整體平均接近':diff>0?'這批評論有助拉高整體平均':'這批評論拉低整體平均';
+  parts.push(`範圍平均${f(S.avg)}星，整體平均${f(total.avg)}星，${impact}${trend?'；'+trend:''}。`);
+ }else if(mode==='negative')parts.push(`負評${S.bad}/${S.n}則，占${f(S.ratio)}%${S.ratio>=60?'，負評偏多':''}${trend?'；'+trend:''}。`);
+ else if(mode==='structure'){
+  const one=current.filter(r=>r.star===1).length,five=current.filter(r=>r.star===5).length,polar=S.n>=10&&one/S.n>=.3&&five/S.n>=.3&&(one+five)/S.n>=.8;
+  parts.push(`好評占${f(S.positive)}%、負評占${f(S.ratio)}%${polar?'，一星與五星集中、評價兩極':''}${trend?'；'+trend:''}。`);
+ }else parts.push(`共${S.n}則評論，平均${f(S.avg)}星，${Math.abs(S.avg-total.avg)<.05?'接近':S.avg>total.avg?'高於':'低於'}整體${f(total.avg)}星${trend?'；'+trend:''}。`);
+ if(ready){
+  const dn=S.n-P.n,db=S.bad-P.bad,dg=S.good-P.good,dm=S.neutral-P.neutral,amount=dn>0?`評論增加${dn}則`:dn<0?`評論減少${-dn}則`:'評論總數相同';
+  const source=dn>0?[[db,'負評'],[dg,'好評'],[dm,'三星評論']].sort((a,b)=>b[0]-a[0]):null;
+  const origin=source&&source[0][0]>0?`，增加最多的是${source[0][1]}（多${source[0][0]}則）`:'';
+  if(mode==='rating')parts.push(`相較${base}，平均星等${Math.abs(S.avg-P.avg)<.05?'相近':S.avg>P.avg?'提高':'降低'}（${f(P.avg)}→${f(S.avg)}星）${origin}。`);
+  else if(mode==='negative')parts.push(`相較${base}，負評${db>0?'增加'+db:db<0?'減少'+(-db):'增減0'}則，負評比例${f(P.ratio)}%→${f(S.ratio)}%；${amount}${db>0&&S.ratio<=P.ratio?'，負評則數增加但占比未升高':''}。`);
+  else if(mode==='structure')parts.push(`相較${base}，好評占比${f(P.positive)}%→${f(S.positive)}%，負評占比${f(P.ratio)}%→${f(S.ratio)}%${origin}。`);
+  else parts.push(`相較${base}，${amount}${origin}；好評${P.good}→${S.good}則、負評${P.bad}→${S.bad}則，平均${f(P.avg)}→${f(S.avg)}星。`);
+ }else if(compare)parts.push(P.n?'去年同期資料未涵蓋完整比較區間，不計算總量增減。':'去年同期沒有評論資料，無法比較。');
+ else if(mode==='relation'||mode==='negative'){
+  const complete=analysis.buckets.filter(g=>!g.partial&&g.n>=5);if(complete.length>=2){const a=complete[0],b=complete.at(-1);parts.push(`${a.label}至${b.label}，每期評論${a.n}→${b.n}則，負評${a.bad}→${b.bad}則、好評${a.good}→${b.good}則。`)}
+ }
+ const unitNames=[...new Set(current.flatMap(r=>r.units))],units=unitNames.map(u=>{const cr=current.filter(r=>r.units.includes(u)),old=prior.filter(r=>r.units.includes(u));return {u,S:stats(cr),P:stats(old),rows:cr}}),unitText=[];
+ const metricKey=mode==='rating'||mode==='relation'?'avg':mode==='structure'?'positive':'ratio',threshold=metricKey==='avg'?.3:10;
+ if(ready&&mode==='relation'){const candidates=units.filter(x=>x.S.n>=5&&x.P.n>=5).map(x=>({...x,delta:x.S.n-x.P.n,badChange:x.S.bad-x.P.bad})).filter(x=>x.delta!==0||x.badChange!==0).sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta)||Math.abs(b.badChange)-Math.abs(a.badChange)).slice(0,2);for(const x of candidates)unitText.push(`${display(x.u)}評論${x.P.n}→${x.S.n}則（好評${x.P.good}→${x.S.good}、負評${x.P.bad}→${x.S.bad}則）`)}
+ else if(ready){const changed=units.filter(x=>x.S.n>=5&&x.P.n>=5).map(x=>({...x,d:x.S[metricKey]-x.P[metricKey]})).filter(x=>Math.abs(x.d)>=threshold),badDirection=metricKey==='ratio'?1:-1;
+  const concern=changed.filter(x=>Math.sign(x.d)===badDirection).sort((a,b)=>Math.abs(b.d)-Math.abs(a.d))[0],improved=changed.filter(x=>Math.sign(x.d)!==badDirection).sort((a,b)=>Math.abs(b.d)-Math.abs(a.d))[0];
+  for(const x of [concern,improved])if(x){const label=metricKey==='avg'?'平均評價':metricKey==='positive'?'好評占比':'負評比例',unit=metricKey==='avg'?'星':'%';unitText.push(`${display(x.u)}${label}${f(x.P[metricKey])}→${f(x.S[metricKey])}${unit}`)}
+ }else{
+  const trends=units.map(x=>({...x,a:analyzeReviewSeries(x.rows,from,to,metric)})).filter(x=>x.a.eligible.length>=4&&x.a.eligible.length/x.a.buckets.length>=.6).map(x=>({...x,d:x.a.fit.slope*(x.a.eligible.at(-1).x-x.a.eligible[0].x)})).filter(x=>Math.abs(x.d)>=threshold);
+  const top=trends.sort((a,b)=>Math.abs(b.d)-Math.abs(a.d))[0];if(top)unitText.push(`${display(top.u)}：${top.a.text}`);
+ }
+ if(!unitText.length){const qualifying=units.filter(x=>x.S.n>=8),key=mode==='structure'?'positive':mode==='rating'?'avg':'ratio';qualifying.sort((a,b)=>key==='avg'?a.S.avg-b.S.avg:b.S[key]-a.S[key]);const x=qualifying[0];if(x)unitText.push(`${display(x.u)}${key==='avg'?'平均'+f(x.S.avg)+'星（'+x.S.n+'則）':key==='positive'?'好評'+x.S.good+'/'+x.S.n+'則，占'+f(x.S.positive)+'%':'負評'+x.S.bad+'/'+x.S.n+'則，占'+f(x.S.ratio)+'%'}`)}
+ if(unitText.length)parts.push((ready&&unitText.some(t=>t.includes('→'))?`與${base}相比，`:'')+unitText.join('；')+'。');
+ if(mode==='rating'&&rolling){const lastMonth=to.slice(0,7),end=new Date(to+'T00:00:00Z'),begin=new Date(Date.UTC(end.getUTCFullYear(),end.getUTCMonth()-11,1)).toISOString().slice(0,10),rr=rows.filter(r=>r.date>=begin&&r.date<=to);if(begin>=min&&rr.length>=10)parts[0]=parts[0].replace(/。$/,'')+`；截至${to}的近12個月滾動平均${f(stats(rr).avg)}星。`}
+ return parts.slice(0,3).join(' ');
 }
 
 function explain(id,how,summary){const box=document.getElementById(id);if(!box)return;box.replaceChildren();[['圖表重點',summary]].forEach(([title,text])=>{const p=document.createElement('p'),b=document.createElement('b');b.textContent=title+'：';p.append(b,document.createTextNode(text));box.append(p)})}
@@ -258,42 +319,8 @@ if(f){d.onclick=f;d.className="lk"}d.append(el("b",a),el("span",b));$("kpi").app
   else{const lines=[{label:'本期平均星等',color:LC,value:cav,part:pc}],bars=[{label:'本期總評論數',color:'#80b8dd',axis:'R',slot:0,value:cn,part:pc}];if(compareReady){lines.push({label:'去年同期平均星等',color:OLD,dash:true,value:oav,part:po});bars.push({label:'去年同期總評論數',color:'#a1aab7',opacity:.5,axis:'R',slot:1,value:on,part:po})}cfg={left:{low:1,high:5,color:LC,title:'平均星等(★)'},right:{title:'評論數量(則)'},lines,bars,aria:'平均星等與評論數量'};[...lines,...bars].forEach(d=>legend.push([d.label,d.color]))}
   plot(c,shown,cfg);
   const how=state.mode==='rating'?'折線越高，該期平均星等越高；沒有評論的期間會斷線，不代表零分。':state.mode==='structure'?'每根長條合計為100%；綠色是4～5星、灰色是3星、橘紅色是1～2星。':state.mode==='negative'?(state.negativeView==='ratio'?'橘紅折線看左軸的負評佔比，藍色長條看右軸的評論則數；兩個軸的高度不能直接比較。':'長條分別顯示全部評論與1～2星負評的則數；負評數增加不一定代表負評比例增加。'):'綠色折線看左軸的平均星等，藍色長條看右軸的評論則數；一起觀察評價與樣本量。';
-  const parts=[],current=FR.filter(r=>r.date>=state.from&&r.date<=state.to),metric=state.mode==='negative'||state.mode==='structure'?'ratio':'avg',analysis=analyzeReviewSeries(current,state.from,state.to,metric);
-  let main=analysis.text;
-  if(state.mode==='structure'&&S.n){const one=current.filter(r=>r.star===1).length,five=current.filter(r=>r.star===5).length;if(S.n>=10&&one/S.n>=.3&&five/S.n>=.3&&(one+five)/S.n>=.8)main+='，評論集中於一星與五星'}
-  const observations=[];
-  if(state.mode==='negative'||state.mode==='relation')for(let i=1;i<analysis.buckets.length;i++){const a=analysis.buckets[i-1],b=analysis.buckets[i];if(a.n<3||b.n<3||a.partial||b.partial)continue;const delta=b.ratio-a.ratio;
-   if(b.n<a.n&&delta>=10)observations.push({score:delta,text:`${b.label}評論較少，負評比例卻升高（${fm(a.ratio,0)}%→${fm(b.ratio,0)}%）`});
-   else if(state.mode==='relation'&&b.n>a.n&&b.avg<a.avg-.3)observations.push({score:(a.avg-b.avg)*20,text:`${b.label}評論增加，但平均評價下降（${fm(a.avg)}→${fm(b.avg)}星）`});
-   else if(state.mode==='negative'&&b.bad>a.bad&&Math.abs(delta)<5)observations.push({score:5,text:`${b.label}負評則數增加，但負評比例大致不變`});
-  }
-  observations.sort((a,b)=>b.score-a.score);if(observations.length)main+='；'+observations[0].text;
-  if(state.mode==='structure'&&S.n){const g=current.filter(r=>r.star>=4).length;main+=`，好評占${fm(g/S.n*100,0)}%、負評占${fm(S.ratio,0)}%`}
-  parts.push(main+'。');
-  const units=[...new Set(current.flatMap(r=>r.units))].map(u=>{const rows=current.filter(r=>r.units.includes(u)),bad=rows.filter(r=>r.star<=2).length,good=rows.filter(r=>r.star>=4).length,a=analyzeReviewSeries(rows,state.from,state.to,'avg');return {u,n:rows.length,bad,good,ratio:bad/rows.length,goodRatio:good/rows.length,analysis:a,delta:a.eligible.length>=3?a.fit.slope*(a.eligible.at(-1).x-a.eligible[0].x):0}});
-  const worsening=units.filter(x=>x.n>=5&&x.delta<=-.3).sort((a,b)=>a.delta-b.delta)[0],improving=units.filter(x=>x.n>=5&&x.delta>=.3).sort((a,b)=>b.delta-a.delta)[0];
-  const concern=worsening||units.filter(x=>x.n>=5&&x.bad>=3&&x.ratio>=.5).sort((a,b)=>Math.sqrt(b.bad)*b.ratio-Math.sqrt(a.bad)*a.ratio)[0];
-  const positive=improving||units.filter(x=>x.n>=5&&x.good>=3&&x.goodRatio>=.7).sort((a,b)=>Math.sqrt(b.good)*b.goodRatio-Math.sqrt(a.good)*a.goodRatio)[0];
-  const unitParts=[];if(concern)unitParts.push(`${DN(concern.u)}${concern===worsening?'平均評價走低，值得留意':'負評比例偏高，值得留意'}`);if(positive&&positive.u!==concern?.u)unitParts.push(`${DN(positive.u)}${positive===improving?'平均評價有所改善':'好評較集中'}`);
-  if(unitParts.length)parts.push(unitParts.join('；')+'。');
-  if(wantCompare){
-   let comparison;
-   if(!S.n)comparison='選取期間沒有評論，無法與去年同期比較。';
-   else if(!P.n)comparison='去年同期沒有評論資料，無法比較。';
-   else{
-    const change=(a,b,unit)=>`${fm(a)}${unit} → ${fm(b)}${unit}`;
-    if(state.mode==='rating'){const d=S.avg-P.avg;comparison=`相較去年同期，平均評價${Math.abs(d)<.05?'相同':d>0?'提高':'下降'}（${change(P.avg,S.avg,'星')}）。`}
-    else if(state.mode==='negative'&&state.negativeView==='count'){comparison=`相較去年同期，負評${S.bad>P.bad?'增加':S.bad<P.bad?'減少':'則數相同'}（${P.bad} → ${S.bad}則），總評論 ${P.n} → ${S.n}則；負評比例 ${change(P.ratio,S.ratio,'%')}。`}
-    else if(state.mode==='negative'){comparison=`相較去年同期，負評比例${Math.abs(S.ratio-P.ratio)<.05?'相同':S.ratio>P.ratio?'上升':'下降'}（${change(P.ratio,S.ratio,'%')}），總評論 ${P.n} → ${S.n}則。`}
-    else if(state.mode==='structure'){const oldGood=previous.reduce((a,x)=>a+x.c[3]+x.c[4],0)/P.n*100,newGood=data.reduce((a,x)=>a+x.c[3]+x.c[4],0)/S.n*100;comparison=`相較去年同期，好評占比 ${change(oldGood,newGood,'%')}，負評占比 ${change(P.ratio,S.ratio,'%')}。`}
-    else comparison=`相較去年同期，評論${S.n>P.n?'增加':S.n<P.n?'減少':'則數相同'}（${P.n} → ${S.n}則），平均星等${Math.abs(S.avg-P.avg)<.05?'相同':S.avg>P.avg?'提高':'下降'}（${change(P.avg,S.avg,'星')}）。`;
-   }
-   parts.unshift(comparison);
-  }
-  if(state.mode==='rating'&&S.n&&state.benchmark)parts.push(`選取期間平均 ${fm(S.avg)} 星，${Math.abs(S.avg-allAvg)<.05?'與':S.avg>allAvg?'高於':'低於'}全部評論平均 ${fm(allAvg)} 星。`);
-  if(state.mode==='rating'&&state.rolling){const rv=data.map(x=>rollingAt(x.end)).filter(Number.isFinite);if(rv.length>=2){const a=rv[0],b=rv.at(-1);parts.push(`近12個月滾動平均${Math.abs(b-a)<.05?'大致持平':b>a?'走高':'走低'}（${fm(a)} → ${fm(b)}星）。`)}else if(!rv.length)parts.push('目前沒有可顯示的近12個月滾動平均。')}
-  const primary=parts.slice(0,wantCompare?3:2);const extra=parts.slice(wantCompare?3:2);if(extra.length&&primary.length)primary[0]=primary[0].replace(/。$/,'')+'；'+extra.map(t=>t.replace(/。$/,'')).join('；')+'。';
-  explain('trend-summary',how,primary.join(' '));
+  const summary=buildReviewSummary({rows:FR,allRows:ROWS,from:state.from,to:state.to,mode:state.mode,negativeView:state.negativeView,compare:wantCompare,rolling:state.rolling,benchmark:state.benchmark});
+  explain('trend-summary',how,summary);
   const lg=document.createElement('div');lg.className='tr-legend';legend.forEach(([t,col])=>{const x=document.createElement('span'),d=document.createElement('i');d.className='tr-dot';d.style.background=col;x.append(d,t);lg.append(x)});
   if(data.some(x=>x.partial)||previous.some(x=>x.partial))lg.append(el('span','空心點、虛線、淡色框:資料不完整的期間'));c.append(lg);
   if(compareReady){const fo=document.createElement('div');fo.className='tr-comparison-foot';fo.textContent=`實線/原色:本期 ${state.from}～${state.to};虛線/淡色:去年同期 ${pf}～${pt}。按期間內第幾個統計週期對齊,並非同一天。`;c.append(fo)}
